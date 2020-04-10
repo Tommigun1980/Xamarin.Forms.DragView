@@ -12,6 +12,7 @@
     <PackageTags>Drag, Draggable, View, Pane, Drag View, Drag Pane, Xamarin, Xamarin.Forms</PackageTags>
     <Title>Xamarin.Forms.DragView</Title>
     <PackageId>Xamarin.Forms.DragView</PackageId>
+    <PackageProjectUrl>https://github.com/Tommigun1980/Xamarin.Forms.DragView</PackageProjectUrl>
   </PropertyGroup>
 
   <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
