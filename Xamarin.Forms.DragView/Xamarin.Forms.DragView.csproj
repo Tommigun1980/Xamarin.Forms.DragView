@@ -1,0 +1,27 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>netstandard2.0</TargetFramework>
+    <PackOnBuild>true</PackOnBuild>
+    <PackageVersion>0.1</PackageVersion>
+    <Authors>Tommi Kiviniemi</Authors>
+    <Description>A draggable pane component for Xamarin.Forms.</Description>
+    <Copyright>Copyright © 2020</Copyright>
+    <Owners>Tommi Kiviniemi</Owners>
+    <Summary>A draggable pane component for Xamarin.Forms.</Summary>
+    <PackageTags>Drag, Draggable, View, Pane, Drag View, Drag Pane, Xamarin, Xamarin.Forms</PackageTags>
+    <Title>Xamarin.Forms.DragView</Title>
+    <PackageId>Xamarin.Forms.DragView</PackageId>
+  </PropertyGroup>
+
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
+    <DebugType></DebugType>
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="Xamarin.Forms" Version="4.5.0.530" />
+    <PackageReference Include="NuGet.Build.Packaging" Version="0.2.5-dev.8">
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+      <PrivateAssets>all</PrivateAssets>
+    </PackageReference>
+  </ItemGroup>
+</Project>

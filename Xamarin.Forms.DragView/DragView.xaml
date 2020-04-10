@@ -1,0 +1,36 @@
+﻿<?xml version="1.0" encoding="UTF-8"?>
+<ContentView
+    xmlns="http://xamarin.com/schemas/2014/forms"
+    xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+    xmlns:controls="clr-namespace:Xamarin.Forms.DragView"
+    x:Name="dragViewRoot"
+    x:Class="Xamarin.Forms.DragView.DragView">
+    
+    <ContentView.GestureRecognizers>
+        <PanGestureRecognizer PanUpdated="MessagesPanel_PanUpdated" />
+    </ContentView.GestureRecognizers>
+
+    <ContentView.Content>
+        <Frame
+            BindingContext="{x:Reference dragViewRoot}"
+            x:DataType="controls:DragView"
+            VerticalOptions="FillAndExpand"
+            Padding="15"
+            CornerRadius="15"
+            BorderColor="Transparent">
+
+            <StackLayout>
+                <BoxView
+                    WidthRequest="60"
+                    HeightRequest="6"
+                    HorizontalOptions="Center"
+                    CornerRadius="3"
+                    BackgroundColor="LightGray" />
+
+                <ContentPresenter
+                    Content="{Binding ViewContent}"
+                    x:Name="contentPresenter"/>
+            </StackLayout>
+        </Frame>
+    </ContentView.Content>
+</ContentView>
