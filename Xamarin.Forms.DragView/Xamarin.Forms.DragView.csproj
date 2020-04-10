@@ -3,7 +3,7 @@
   <PropertyGroup>
     <TargetFramework>netstandard2.0</TargetFramework>
     <PackOnBuild>true</PackOnBuild>
-    <PackageVersion>0.1</PackageVersion>
+    <PackageVersion>0.11</PackageVersion>
     <Authors>Tommi Kiviniemi</Authors>
     <Description>A draggable pane component for Xamarin.Forms.</Description>
     <Copyright>Copyright © 2020</Copyright>
