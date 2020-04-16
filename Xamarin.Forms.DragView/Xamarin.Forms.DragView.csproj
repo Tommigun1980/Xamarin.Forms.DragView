@@ -3,7 +3,7 @@
   <PropertyGroup>
     <TargetFramework>netstandard2.0</TargetFramework>
     <PackOnBuild>true</PackOnBuild>
-    <PackageVersion>0.11</PackageVersion>
+    <PackageVersion>1.0.0</PackageVersion>
     <Authors>Tommi Kiviniemi</Authors>
     <Description>A draggable pane component for Xamarin.Forms.</Description>
     <Copyright>Copyright © 2020</Copyright>
@@ -25,5 +25,18 @@
       <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
       <PrivateAssets>all</PrivateAssets>
     </PackageReference>
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Condition=" '$(EnableDefaultCompileItems)' == 'true' " Update="AssemblyInfo.cs">
+      <IncludeInPackage>true</IncludeInPackage>
+    </Compile>
+    <Compile Condition=" '$(EnableDefaultCompileItems)' == 'true' " Update="DragView.xaml.cs">
+      <IncludeInPackage>true</IncludeInPackage>
+    </Compile>
+  </ItemGroup>
+  <ItemGroup>
+    <None Update="DragView.xaml">
+      <IncludeInPackage>true</IncludeInPackage>
+    </None>
   </ItemGroup>
 </Project>

@@ -5,7 +5,16 @@ namespace Xamarin.Forms.DragView
     [ContentProperty(nameof(ViewContent))]
     public partial class DragView : ContentView
     {
-        private const string SwipeYAnimationName = "SwipeYAnimation";
+        public enum DockingEdgeType
+        {
+            Bottom,
+            Right,
+            Top,
+            Left
+        }
+
+        public static readonly BindableProperty DockingEdgeProperty = BindableProperty.Create(
+            nameof(DockingEdge), typeof(DockingEdgeType), typeof(DragView), DockingEdgeType.Bottom, propertyChanged: OnDockingEdgePropertyChanged);
 
         public static readonly BindableProperty ViewContentProperty = BindableProperty.Create(
             nameof(ViewContent), typeof(View), typeof(DragView));
@@ -16,40 +25,95 @@ namespace Xamarin.Forms.DragView
         public static readonly BindableProperty MinBoundsProperty = BindableProperty.Create(
             nameof(MinBounds), typeof(double), typeof(DragView), 0.1);
 
+        // this gets clamped to min and max bounds
+        public static readonly BindableProperty StartBoundsProperty = BindableProperty.Create(
+            nameof(StartBounds), typeof(double), typeof(DragView), 0.0);
+
         public static readonly BindableProperty SwipeThresholdProperty = BindableProperty.Create(
             nameof(SwipeThreshold), typeof(double), typeof(DragView), 50.0);
 
+        public static readonly BindableProperty IsDragKnobVisibleProperty = BindableProperty.Create(
+            nameof(IsDragKnobVisible), typeof(bool), typeof(DragView), true);
+
+        public static readonly BindableProperty AnimationEasingProperty = BindableProperty.Create(
+            nameof(AnimationEasing), typeof(Easing), typeof(DragView), Easing.BounceOut);
+
+        public static readonly BindableProperty CornerRadiusProperty = BindableProperty.Create(
+            nameof(CornerRadius), typeof(double), typeof(DragView), 15.0);
+
+        public DockingEdgeType DockingEdge
+        {
+            get => (DockingEdgeType)GetValue(DragView.DockingEdgeProperty);
+            set => SetValue(DragView.DockingEdgeProperty, value);
+        }
         public View ViewContent
         {
             get => (View)GetValue(DragView.ViewContentProperty);
             set => SetValue(DragView.ViewContentProperty, value);
         }
-        // maximum the pane can be dragged to. 1.0 means upper screen edge (100% of screen height)
+        // maximum the pane can be dragged to. 1.0 means 100% of parent container's width or height (depending on DockingEdge)
         public double MaxBounds
         {
             get => (double)GetValue(DragView.MaxBoundsProperty);
             set => SetValue(DragView.MaxBoundsProperty, value);
         }
-        // minimum the pane can be dragged to (and also its start value). 0.1 means 10% of screen height, from the bottom
+        // minimum the pane can be dragged to (and also its start value). 0.1 means 10% of parent container's width or height (depending on DockingEdge)
         public double MinBounds
         {
             get => (double)GetValue(DragView.MinBoundsProperty);
             set => SetValue(DragView.MinBoundsProperty, value);
+        }
+        public double StartBounds
+        {
+            get => (double)GetValue(DragView.StartBoundsProperty);
+            set => SetValue(DragView.StartBoundsProperty, value);
         }
         public double SwipeThreshold
         {
             get => (double)GetValue(DragView.SwipeThresholdProperty);
             set => SetValue(DragView.SwipeThresholdProperty, value);
         }
+        public bool IsDragKnobVisible
+        {
+            get => (bool)GetValue(DragView.IsDragKnobVisibleProperty);
+            set => SetValue(DragView.IsDragKnobVisibleProperty, value);
+        }
+        public Easing AnimationEasing
+        {
+            get => (Easing)GetValue(DragView.AnimationEasingProperty);
+            set => SetValue(DragView.AnimationEasingProperty, value);
+        }
+        public double CornerRadius
+        {
+            get => (double)GetValue(DragView.CornerRadiusProperty);
+            set => SetValue(DragView.CornerRadiusProperty, value);
+        }
 
-        private double previousDeltaY;
+        private static void OnDockingEdgePropertyChanged(BindableObject bindable, object oldValue, object newValue)
+        {
+            if (newValue != oldValue)
+                ((DragView)bindable).RefreshVisualState();
+        }
+
+        private const string SwipeAnimationName = "SwipeAnimation";
+
+        private double previousDelta;
         private Element previousParent;
 
         public DragView()
         {
             InitializeComponent();
 
+            this.RefreshVisualState();
+
             this.SizeChanged += (object sender, EventArgs e) => this.ResetIfParentChanged();
+        }
+
+        private void RefreshVisualState()
+        {
+            VisualStateManager.GoToState(this.dragViewDragKnob, this.DockingEdge.ToString());
+
+            this.Reset();
         }
 
         private void ResetIfParentChanged()
@@ -58,13 +122,17 @@ namespace Xamarin.Forms.DragView
             {
                 this.previousParent = this.Parent;
 
-                this.AbortAnimation(SwipeYAnimationName);
-                this.previousDeltaY = 0;
-                this.SetHeightRequest(this.GetMinHeight());
+                this.Reset();
 
                 // HACK! content presenter's content is null if it's assigned when view is not drawn. TODO: REMOVEME once Xamarin fixes this
                 this.contentPresenter.Content = this.ViewContent;
             }
+        }
+        private void Reset()
+        {
+            this.AbortAnimation(SwipeAnimationName);
+            this.previousDelta = 0;
+            this.SetSizeRequest(this.GetContainerStartSize());
         }
 
         private void MessagesPanel_PanUpdated(object sender, PanUpdatedEventArgs e)
@@ -72,64 +140,88 @@ namespace Xamarin.Forms.DragView
             switch (e.StatusType)
             {
                 case GestureStatus.Running:
-                    var deltaY = e.TotalY - this.previousDeltaY;
-                    this.PanPanel(deltaY);
-                    this.previousDeltaY = e.TotalY;
+                    var total = this.IsVertical() ? e.TotalY : e.TotalX;
+
+                    var delta = total - this.previousDelta;
+
+                    if (!this.IsNormalGrowthAxis())
+                        delta = -delta;
+
+                    this.PanPanel(delta);
+                    this.previousDelta = total;
                     break;
 
                 case GestureStatus.Completed:
-                    this.previousDeltaY = 0;
+                    this.previousDelta = 0;
                     break;
             }
         }
 
-        private void PanPanel(double deltaY)
+        private void PanPanel(double delta)
         {
-            if (this.AnimationIsRunning(SwipeYAnimationName))
+            if (this.AnimationIsRunning(SwipeAnimationName))
                 return;
 
             // negative y translation brings panel upwards, content grows upwards
-            if (Math.Abs(deltaY) >= this.SwipeThreshold)
+            if (this.SwipeThreshold >= 0 && Math.Abs(delta) >= this.SwipeThreshold)
             {
-                var newHeight = deltaY <= 0 ? this.GetMaxHeight() : this.GetMinHeight();
+                var newSize = delta <= 0 ? this.GetContainerMaxSize() : this.GetContainerMinSize();
 
-                var animation = new Animation(this.SetHeightRequest, this.Height, newHeight);
-                animation.Commit(this, SwipeYAnimationName, 16, 250, Easing.BounceOut);
+                var animation = new Animation(this.SetSizeRequest, this.GetSizeFrom(this), newSize);
+                animation.Commit(this, SwipeAnimationName, 16, 250, this.AnimationEasing);
             }
             else
             {
-                try
-                {
-                    var newHeight = this.Height + (-deltaY);
-                    this.SetHeightRequest(newHeight);
-                }
-                catch (ArgumentException) { }
+                var newSize = this.GetSizeFrom(this) + (-delta);
+                this.SetSizeRequest(newSize);
             }
         }
 
-        private double GetMaxHeight()
+        private bool IsVertical()
         {
-            return this.MaxBounds * this.GetContainerHeight();
+            return this.DockingEdge == DockingEdgeType.Bottom || this.DockingEdge == DockingEdgeType.Top;
         }
-        private double GetMinHeight()
+        private bool IsNormalGrowthAxis()
         {
-            return this.MinBounds * this.GetContainerHeight();
-        }
-        private double GetContainerHeight()
-        {
-            var visualParent = this.Parent as VisualElement;
-            return visualParent != null ? visualParent.Height : 0;
+            return this.DockingEdge == DockingEdgeType.Bottom || this.DockingEdge == DockingEdgeType.Right;
         }
 
-        private void SetHeightRequest(double value)
+        private double GetContainerMaxSize()
+        {
+            return this.MaxBounds * this.GetContainerSize();
+        }
+        private double GetContainerMinSize()
+        {
+            return this.MinBounds * this.GetContainerSize();
+        }
+        private double GetContainerStartSize()
+        {
+            return this.StartBounds * this.GetContainerSize();
+        }
+
+        private double GetContainerSize()
+        {
+            var visualParent = this.Parent as VisualElement;
+            return visualParent != null ? this.GetSizeFrom(visualParent) : 0;
+        }
+
+        private void SetSizeRequest(double value)
         {
             try
             {
-                value = /*Math.*/Clamp(value, this.GetMinHeight(), this.GetMaxHeight());
+                value = /*Math.*/Clamp(value, this.GetContainerMinSize(), this.GetContainerMaxSize());
             }
             catch (ArgumentException) { }
 
-            this.HeightRequest = value;
+            if (this.IsVertical())
+                this.HeightRequest = value;
+            else
+                this.WidthRequest = value;
+        }
+
+        private double GetSizeFrom(VisualElement element)
+        {
+            return this.IsVertical() ? element.Height : element.Width;
         }
 
         private static double Clamp(double value, double min, double max)
