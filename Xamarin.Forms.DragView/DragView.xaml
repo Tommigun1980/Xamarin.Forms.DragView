@@ -46,8 +46,8 @@
                     BackgroundColor="LightGray">
 
                     <VisualStateManager.VisualStateGroups>
-                        <VisualStateGroup x:Name="DockingEdge">
-                            <VisualState x:Name="Bottom">
+                        <VisualStateGroup x:Name="DragDirection">
+                            <VisualState x:Name="Up">
                                 <VisualState.Setters>
                                     <Setter Property="WidthRequest" Value="50" />
                                     <Setter Property="HeightRequest" Value="6" />
@@ -57,7 +57,7 @@
                                     <Setter Property="Grid.Row" Value="0" />
                                 </VisualState.Setters>
                             </VisualState>
-                            <VisualState x:Name="Top">
+                            <VisualState x:Name="Down">
                                 <VisualState.Setters>
                                     <Setter Property="WidthRequest" Value="50" />
                                     <Setter Property="HeightRequest" Value="6" />
@@ -68,7 +68,7 @@
                                 </VisualState.Setters>
                             </VisualState>
 
-                            <VisualState x:Name="Right">
+                            <VisualState x:Name="Left">
                                 <VisualState.Setters>
                                     <Setter Property="WidthRequest" Value="6" />
                                     <Setter Property="HeightRequest" Value="50" />
@@ -78,7 +78,7 @@
                                     <Setter Property="Grid.Row" Value="1" />
                                 </VisualState.Setters>
                             </VisualState>
-                            <VisualState x:Name="Left">
+                            <VisualState x:Name="Right">
                                 <VisualState.Setters>
                                     <Setter Property="WidthRequest" Value="6" />
                                     <Setter Property="HeightRequest" Value="50" />

@@ -5,16 +5,16 @@ namespace Xamarin.Forms.DragView
     [ContentProperty(nameof(ViewContent))]
     public partial class DragView : ContentView
     {
-        public enum DockingEdgeType
+        public enum DragDirectionType
         {
-            Bottom,
-            Right,
-            Top,
-            Left
+            Up,
+            Left,
+            Down,
+            Right
         }
 
-        public static readonly BindableProperty DockingEdgeProperty = BindableProperty.Create(
-            nameof(DockingEdge), typeof(DockingEdgeType), typeof(DragView), DockingEdgeType.Bottom, propertyChanged: OnDockingEdgePropertyChanged);
+        public static readonly BindableProperty DragDirectionProperty = BindableProperty.Create(
+            nameof(DragDirection), typeof(DragDirectionType), typeof(DragView), DragDirectionType.Up, propertyChanged: OnDockingEdgePropertyChanged);
 
         public static readonly BindableProperty ViewContentProperty = BindableProperty.Create(
             nameof(ViewContent), typeof(View), typeof(DragView));
@@ -41,10 +41,10 @@ namespace Xamarin.Forms.DragView
         public static readonly BindableProperty CornerRadiusProperty = BindableProperty.Create(
             nameof(CornerRadius), typeof(double), typeof(DragView), 15.0);
 
-        public DockingEdgeType DockingEdge
+        public DragDirectionType DragDirection
         {
-            get => (DockingEdgeType)GetValue(DragView.DockingEdgeProperty);
-            set => SetValue(DragView.DockingEdgeProperty, value);
+            get => (DragDirectionType)GetValue(DragView.DragDirectionProperty);
+            set => SetValue(DragView.DragDirectionProperty, value);
         }
         public View ViewContent
         {
@@ -111,7 +111,7 @@ namespace Xamarin.Forms.DragView
 
         private void RefreshVisualState()
         {
-            VisualStateManager.GoToState(this.dragViewDragKnob, this.DockingEdge.ToString());
+            VisualStateManager.GoToState(this.dragViewDragKnob, this.DragDirection.ToString());
 
             this.Reset();
         }
@@ -144,7 +144,7 @@ namespace Xamarin.Forms.DragView
 
                     var delta = total - this.previousDelta;
 
-                    if (!this.IsNormalGrowthAxis())
+                    if (!this.IsPositiveGrowthAxis())
                         delta = -delta;
 
                     this.PanPanel(delta);
@@ -179,11 +179,11 @@ namespace Xamarin.Forms.DragView
 
         private bool IsVertical()
         {
-            return this.DockingEdge == DockingEdgeType.Bottom || this.DockingEdge == DockingEdgeType.Top;
+            return this.DragDirection == DragDirectionType.Up || this.DragDirection == DragDirectionType.Down;
         }
-        private bool IsNormalGrowthAxis()
+        private bool IsPositiveGrowthAxis()
         {
-            return this.DockingEdge == DockingEdgeType.Bottom || this.DockingEdge == DockingEdgeType.Right;
+            return this.DragDirection == DragDirectionType.Up || this.DragDirection == DragDirectionType.Left;
         }
 
         private double GetContainerMaxSize()

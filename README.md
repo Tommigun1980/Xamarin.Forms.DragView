@@ -10,11 +10,13 @@ Import the DragView assembly:
 xmlns:dragview="clr-namespace:Xamarin.Forms.DragView;assembly=Xamarin.Forms.DragView"
 ```
 
-Place your DragView inside an AbsoluteLayout and dock it to one of the edges. The following example docks the DragView to the bottom:
+Place your DragView inside an AbsoluteLayout, dock it to one of the edges and set the DragDirection property.
+
+The following example docks the DragView to the bottom:
 ```xaml
 <AbsoluteLayout>
     <dragview:DragView
-        DockingEdge="Bottom"
+        DragDirection="Up"
         MaxBounds="0.5"
         MinBounds="0.1"
 
@@ -26,7 +28,7 @@ Place your DragView inside an AbsoluteLayout and dock it to one of the edges. Th
 </AbsoluteLayout>
 ```
 
-DockingEdge should be set to which edge the control is docked to and can be Top, Right, Left or Bottom.
+DragDirection can be Up, Left, Down or Right.
 MinBounds and MaxBounds declare the minimum and maximum space the DragView can take up, denoted as percentages of the parent container's size.
 
 See [DragView.xaml.cs](Xamarin.Forms.DragView/DragView.xaml.cs) for all bindable properties.
@@ -39,7 +41,7 @@ Here is the XAML for the DragView setups as seen in the demonstration image abov
 <AbsoluteLayout>
     <!-- split view on the right side of the screen, lacking swipe gesture and drag knob -->
     <dragview:DragView
-        DockingEdge="Right"
+        DragDirection="Left"
         MinBounds="0.025"
         MaxBounds="1.0"
         StartBounds="0.33"
@@ -55,7 +57,7 @@ Here is the XAML for the DragView setups as seen in the demonstration image abov
     
     <!-- small drag view docked to the upper right of the screen -->
     <dragview:DragView
-        DockingEdge="Right"
+        DragDirection="Left"
         MaxBounds="0.8"
 
         AbsoluteLayout.LayoutFlags="PositionProportional, HeightProportional"
@@ -66,7 +68,7 @@ Here is the XAML for the DragView setups as seen in the demonstration image abov
 
     <!-- small drag view docked to the lower left of the screen -->
     <dragview:DragView
-        DockingEdge="Left"
+        DragDirection="Right"
         MaxBounds="0.8"
 
         AbsoluteLayout.LayoutFlags="PositionProportional, HeightProportional"
@@ -77,7 +79,7 @@ Here is the XAML for the DragView setups as seen in the demonstration image abov
 
     <!-- drag view docked to the bottom of the screen -->
     <dragview:DragView
-        DockingEdge="Bottom"
+        DragDirection="Top"
 
         AbsoluteLayout.LayoutFlags="PositionProportional, WidthProportional"
         AbsoluteLayout.LayoutBounds="0.5, 1, 1, AutoSize">
