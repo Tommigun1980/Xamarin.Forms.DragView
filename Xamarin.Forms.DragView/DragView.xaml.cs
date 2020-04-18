@@ -17,7 +17,7 @@ namespace Xamarin.Forms.DragView
             nameof(DragDirection), typeof(DragDirectionType), typeof(DragView), DragDirectionType.Up, propertyChanged: OnDockingEdgePropertyChanged);
 
         public static readonly BindableProperty ViewContentProperty = BindableProperty.Create(
-            nameof(ViewContent), typeof(View), typeof(DragView));
+            nameof(ViewContent), typeof(View), typeof(DragView), propertyChanged: OnViewContentPropertyChanged);
 
         public static readonly BindableProperty MaxBoundsProperty = BindableProperty.Create(
             nameof(MaxBounds), typeof(double), typeof(DragView), 0.5);
@@ -95,6 +95,12 @@ namespace Xamarin.Forms.DragView
                 ((DragView)bindable).RefreshVisualState();
         }
 
+        private static void OnViewContentPropertyChanged(BindableObject bindable, object oldValue, object newValue)
+        {
+            if (newValue != oldValue)
+                ((DragView)bindable).ReassignContentPresenterAndPropagateBindingContext();
+        }
+
         private const string SwipeAnimationName = "SwipeAnimation";
 
         private double previousDelta;
@@ -106,7 +112,14 @@ namespace Xamarin.Forms.DragView
 
             this.RefreshVisualState();
 
-            this.SizeChanged += (object sender, EventArgs e) => this.ResetIfParentChanged();
+            this.SizeChanged += (object sender, EventArgs args) => this.ResetIfParentChanged();
+        }
+
+        protected override void OnBindingContextChanged()
+        {
+            base.OnBindingContextChanged();
+
+            this.PropagateBindingContext();
         }
 
         private void RefreshVisualState()
@@ -124,10 +137,25 @@ namespace Xamarin.Forms.DragView
 
                 this.Reset();
 
-                // HACK! content presenter's content is null if it's assigned when view is not drawn. TODO: REMOVEME once Xamarin fixes this
-                this.contentPresenter.Content = this.ViewContent;
+                // HACK #10374! TODO: REMOVEME once Xamarin fixes this
+                this.ReassignContentPresenterAndPropagateBindingContext();
             }
         }
+
+        // HACK #10374! TODO: REMOVEME once Xamarin fixes this
+        private void ReassignContentPresenterAndPropagateBindingContext()
+        {
+            this.contentPresenter.Content = this.ViewContent;
+
+            this.PropagateBindingContext();
+        }
+
+        private void PropagateBindingContext()
+        {
+            if (this.ViewContent != null)
+                BindableObject.SetInheritedBindingContext(this.ViewContent, this.BindingContext);
+        }
+
         private void Reset()
         {
             this.AbortAnimation(SwipeAnimationName);
