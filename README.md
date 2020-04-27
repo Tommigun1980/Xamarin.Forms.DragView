@@ -3,6 +3,8 @@
 
 ![DragView](Doc/DragView.gif)
 
+NuGet package available at https://www.nuget.org/packages/Xamarin.Forms.DragView/
+
 ## Usage
 
 Import the DragView assembly:
