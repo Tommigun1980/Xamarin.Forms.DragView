@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Diagnostics;
 
 namespace Xamarin.Forms.DragView
 {
@@ -30,7 +31,10 @@ namespace Xamarin.Forms.DragView
             nameof(StartBounds), typeof(double), typeof(DragView), 0.0);
 
         public static readonly BindableProperty SwipeThresholdProperty = BindableProperty.Create(
-            nameof(SwipeThreshold), typeof(double), typeof(DragView), 100.0);
+            nameof(SwipeThreshold), typeof(double), typeof(DragView), 15.0);
+
+        public static readonly BindableProperty SwipeReleaseThresholdMsProperty = BindableProperty.Create(
+            nameof(SwipeReleaseThresholdMs), typeof(long), typeof(DragView), 25L);
 
         public static readonly BindableProperty AnimationEasingProperty = BindableProperty.Create(
             nameof(AnimationEasing), typeof(Easing), typeof(DragView), Easing.BounceOut);
@@ -70,6 +74,11 @@ namespace Xamarin.Forms.DragView
             get => (double)GetValue(DragView.SwipeThresholdProperty);
             set => SetValue(DragView.SwipeThresholdProperty, value);
         }
+        public long SwipeReleaseThresholdMs
+        {
+            get => (long)GetValue(DragView.SwipeReleaseThresholdMsProperty);
+            set => SetValue(DragView.SwipeReleaseThresholdMsProperty, value);
+        }
         public Easing AnimationEasing
         {
             get => (Easing)GetValue(DragView.AnimationEasingProperty);
@@ -97,7 +106,7 @@ namespace Xamarin.Forms.DragView
 
         private double previousDelta;
         private Element previousParent;
-        private long startTickOfPanGesture;
+        private long lastInteractionTicks;
 
         public DragView()
         {
@@ -156,7 +165,7 @@ namespace Xamarin.Forms.DragView
         {
             this.AbortAnimation(SwipeAnimationName);
             this.previousDelta = 0;
-            this.startTickOfPanGesture = 0;
+            this.lastInteractionTicks = 0;
             this.SetSizeRequest(this.GetContainerStartSize());
         }
 
@@ -165,46 +174,53 @@ namespace Xamarin.Forms.DragView
             switch (e.StatusType)
             {
                 case GestureStatus.Started:
-                    this.startTickOfPanGesture = DateTime.UtcNow.Ticks;
+                    if (!this.AnimationIsRunning(SwipeAnimationName))
+                        this.lastInteractionTicks = Stopwatch.GetTimestamp();
                     break;
 
                 case GestureStatus.Running:
-                    var total = this.IsVertical() ? e.TotalY : e.TotalX;
+                    if (!this.AnimationIsRunning(SwipeAnimationName))
+                    {
+                        var total = this.IsVertical() ? e.TotalY : e.TotalX;
+                        var delta = total - this.previousDelta;
 
-                    var delta = total - this.previousDelta;
+                        if (!this.IsPositiveGrowthAxis())
+                            delta = -delta;
 
-                    if (!this.IsPositiveGrowthAxis())
-                        delta = -delta;
-
-                    this.PanPanel(delta);
-                    this.previousDelta = total;
+                        this.PanPanel(delta);
+                        this.previousDelta = total;
+                        this.lastInteractionTicks = Stopwatch.GetTimestamp();
+                    }
                     break;
 
                 case GestureStatus.Completed:
+                    if (!this.AnimationIsRunning(SwipeAnimationName))
+                    {
+                        if ((this.SwipeThreshold >= 0 && Math.Abs(this.previousDelta) >= this.SwipeThreshold) &&
+                            (this.lastInteractionTicks != 0 && (Stopwatch.GetTimestamp() - this.lastInteractionTicks)/10000 <= this.SwipeReleaseThresholdMs))
+                        {
+                            this.SwipePanel(this.previousDelta);
+                        }
+                    }
+
                     this.previousDelta = 0;
-                    this.startTickOfPanGesture = 0;
+                    this.lastInteractionTicks = 0;
                     break;
             }
         }
 
         private void PanPanel(double delta)
         {
-            if (this.AnimationIsRunning(SwipeAnimationName))
-                return;
+            var newSize = this.GetSizeFrom(this) + (-delta);
+            this.SetSizeRequest(newSize);
+        }
 
-            // negative y translation brings panel upwards, content grows upwards
-            if (this.SwipeThreshold >= 0 && Math.Abs(delta) >= this.SwipeThreshold && (DateTime.UtcNow.Ticks - this.startTickOfPanGesture)/10000000.0 <= 0.2)
-            {
-                var newSize = delta <= 0 ? this.GetContainerMaxSize() : this.GetContainerMinSize();
+        private void SwipePanel(double delta)
+        {
+            var newSize = delta <= 0 ? this.GetContainerMaxSize() : this.GetContainerMinSize();
 
-                var animation = new Animation(this.SetSizeRequest, this.GetSizeFrom(this), newSize);
-                animation.Commit(this, SwipeAnimationName, 16, 250, this.AnimationEasing);
-            }
-            else
-            {
-                var newSize = this.GetSizeFrom(this) + (-delta);
-                this.SetSizeRequest(newSize);
-            }
+            var animation = new Animation(this.SetSizeRequest, this.GetSizeFrom(this), newSize);
+            animation.Commit(this, SwipeAnimationName, 16, 250, this.AnimationEasing);
         }
 
         private bool IsVertical()
