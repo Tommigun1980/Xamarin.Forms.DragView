@@ -30,10 +30,7 @@ namespace Xamarin.Forms.DragView
             nameof(StartBounds), typeof(double), typeof(DragView), 0.0);
 
         public static readonly BindableProperty SwipeThresholdProperty = BindableProperty.Create(
-            nameof(SwipeThreshold), typeof(double), typeof(DragView), 50.0);
-
-        public static readonly BindableProperty IsDragKnobVisibleProperty = BindableProperty.Create(
-            nameof(IsDragKnobVisible), typeof(bool), typeof(DragView), true);
+            nameof(SwipeThreshold), typeof(double), typeof(DragView), 100.0);
 
         public static readonly BindableProperty AnimationEasingProperty = BindableProperty.Create(
             nameof(AnimationEasing), typeof(Easing), typeof(DragView), Easing.BounceOut);
@@ -73,11 +70,6 @@ namespace Xamarin.Forms.DragView
             get => (double)GetValue(DragView.SwipeThresholdProperty);
             set => SetValue(DragView.SwipeThresholdProperty, value);
         }
-        public bool IsDragKnobVisible
-        {
-            get => (bool)GetValue(DragView.IsDragKnobVisibleProperty);
-            set => SetValue(DragView.IsDragKnobVisibleProperty, value);
-        }
         public Easing AnimationEasing
         {
             get => (Easing)GetValue(DragView.AnimationEasingProperty);
@@ -105,6 +97,7 @@ namespace Xamarin.Forms.DragView
 
         private double previousDelta;
         private Element previousParent;
+        private long startTickOfPanGesture;
 
         public DragView()
         {
@@ -124,7 +117,10 @@ namespace Xamarin.Forms.DragView
 
         private void RefreshVisualState()
         {
-            VisualStateManager.GoToState(this.dragViewDragKnob, this.DragDirection.ToString());
+            var stateName = this.DragDirection.ToString();
+            VisualStateManager.GoToState(this.dragViewRootFrame, stateName);
+            VisualStateManager.GoToState(this.dragViewDragArea, stateName);
+            VisualStateManager.GoToState(this.dragViewDragKnob, stateName);
 
             this.Reset();
         }
@@ -160,6 +156,7 @@ namespace Xamarin.Forms.DragView
         {
             this.AbortAnimation(SwipeAnimationName);
             this.previousDelta = 0;
+            this.startTickOfPanGesture = 0;
             this.SetSizeRequest(this.GetContainerStartSize());
         }
 
@@ -167,6 +164,10 @@ namespace Xamarin.Forms.DragView
         {
             switch (e.StatusType)
             {
+                case GestureStatus.Started:
+                    this.startTickOfPanGesture = DateTime.UtcNow.Ticks;
+                    break;
+
                 case GestureStatus.Running:
                     var total = this.IsVertical() ? e.TotalY : e.TotalX;
 
@@ -181,6 +182,7 @@ namespace Xamarin.Forms.DragView
 
                 case GestureStatus.Completed:
                     this.previousDelta = 0;
+                    this.startTickOfPanGesture = 0;
                     break;
             }
         }
@@ -191,7 +193,7 @@ namespace Xamarin.Forms.DragView
                 return;
 
             // negative y translation brings panel upwards, content grows upwards
-            if (this.SwipeThreshold >= 0 && Math.Abs(delta) >= this.SwipeThreshold)
+            if (this.SwipeThreshold >= 0 && Math.Abs(delta) >= this.SwipeThreshold && (DateTime.UtcNow.Ticks - this.startTickOfPanGesture)/10000000.0 <= 0.2)
             {
                 var newSize = delta <= 0 ? this.GetContainerMaxSize() : this.GetContainerMinSize();
 
