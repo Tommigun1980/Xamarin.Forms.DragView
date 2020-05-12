@@ -30,6 +30,9 @@ namespace Xamarin.Forms.DragView
         public static readonly BindableProperty StartBoundsProperty = BindableProperty.Create(
             nameof(StartBounds), typeof(double), typeof(DragView), 0.0);
 
+        public static readonly BindableProperty StopGapBoundsProperty = BindableProperty.Create(
+            nameof(StopGapBounds), typeof(double?), typeof(DragView), null);
+
         public static readonly BindableProperty SwipeThresholdProperty = BindableProperty.Create(
             nameof(SwipeThreshold), typeof(double), typeof(DragView), 15.0);
 
@@ -68,6 +71,11 @@ namespace Xamarin.Forms.DragView
         {
             get => (double)GetValue(DragView.StartBoundsProperty);
             set => SetValue(DragView.StartBoundsProperty, value);
+        }
+        public double? StopGapBounds
+        {
+            get => (double?)GetValue(DragView.StopGapBoundsProperty);
+            set => SetValue(DragView.StopGapBoundsProperty, value);
         }
         public double SwipeThreshold
         {
@@ -217,9 +225,19 @@ namespace Xamarin.Forms.DragView
 
         private void SwipePanel(double delta)
         {
-            var newSize = delta <= 0 ? this.GetContainerMaxSize() : this.GetContainerMinSize();
+            var swipingOpen = delta <= 0;
+            var currentSize = this.GetSizeFrom(this);
+            var maxSize = this.GetContainerMaxSize();
 
-            var animation = new Animation(this.SetSizeRequest, this.GetSizeFrom(this), newSize);
+            var newSize = swipingOpen ? maxSize : this.GetContainerMinSize();
+            if (this.StopGapBounds.HasValue)
+            {
+                var stopGapPosition = this.StopGapBounds.Value * maxSize;
+                if ((swipingOpen && currentSize < stopGapPosition) || (!swipingOpen && currentSize > stopGapPosition))
+                    newSize = stopGapPosition;
+            }
+
+            var animation = new Animation(this.SetSizeRequest, currentSize, newSize);
             animation.Commit(this, SwipeAnimationName, 16, 250, this.AnimationEasing);
         }
 
