@@ -41,14 +41,13 @@ Here is the XAML for the DragView setups as seen in the demonstration image abov
 
 ```xaml
 <AbsoluteLayout>
-    <!-- split view on the right side of the screen, lacking swipe gesture and drag knob -->
+    <!-- split view on the right side of the screen, lacking swipe gesture -->
     <dragview:DragView
         DragDirection="Left"
         MinBounds="0.025"
         MaxBounds="1.0"
         StartBounds="0.33"
         SwipeThreshold="-1"
-        IsDragKnobVisible="False"
         CornerRadius="0"
 
         AbsoluteLayout.LayoutFlags="PositionProportional, HeightProportional"
@@ -68,10 +67,11 @@ Here is the XAML for the DragView setups as seen in the demonstration image abov
         <Label Text="Right" VerticalOptions="Center" />
     </dragview:DragView>
 
-    <!-- small drag view docked to the lower left of the screen -->
+    <!-- small drag view docked to the lower left of the screen, with a stop gap at half way -->
     <dragview:DragView
         DragDirection="Right"
         MaxBounds="0.8"
+        StopGapBounds="0.4"
 
         AbsoluteLayout.LayoutFlags="PositionProportional, HeightProportional"
         AbsoluteLayout.LayoutBounds="0, 0.8, AutoSize, 0.2">
