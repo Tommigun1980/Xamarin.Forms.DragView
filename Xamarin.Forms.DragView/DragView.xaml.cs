@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 
 namespace Xamarin.Forms.DragView
@@ -34,10 +35,10 @@ namespace Xamarin.Forms.DragView
             nameof(StopGapBounds), typeof(double?), typeof(DragView), null);
 
         public static readonly BindableProperty SwipeThresholdProperty = BindableProperty.Create(
-            nameof(SwipeThreshold), typeof(double), typeof(DragView), 15.0);
+            nameof(SwipeThreshold), typeof(double), typeof(DragView), 20.0);
 
         public static readonly BindableProperty SwipeReleaseThresholdMsProperty = BindableProperty.Create(
-            nameof(SwipeReleaseThresholdMs), typeof(long), typeof(DragView), 25L);
+            nameof(SwipeReleaseThresholdMs), typeof(long), typeof(DragView), 35L);
 
         public static readonly BindableProperty AnimationEasingProperty = BindableProperty.Create(
             nameof(AnimationEasing), typeof(Easing), typeof(DragView), Easing.BounceOut);
@@ -112,9 +113,13 @@ namespace Xamarin.Forms.DragView
 
         private const string SwipeAnimationName = "SwipeAnimation";
 
-        private double previousDelta;
+        private class DragPoint
+        {
+            public double total;
+            public long ticks;
+        }
+        private IList<DragPoint> dragPoints = new List<DragPoint>();
         private Element previousParent;
-        private long lastInteractionTicks;
 
         public DragView()
         {
@@ -172,8 +177,7 @@ namespace Xamarin.Forms.DragView
         private void Reset()
         {
             this.AbortAnimation(SwipeAnimationName);
-            this.previousDelta = 0;
-            this.lastInteractionTicks = 0;
+            this.dragPoints.Clear();
             this.SetSizeRequest(this.GetContainerStartSize());
         }
 
@@ -181,40 +185,61 @@ namespace Xamarin.Forms.DragView
         {
             switch (e.StatusType)
             {
-                case GestureStatus.Started:
-                    if (!this.AnimationIsRunning(SwipeAnimationName))
-                        this.lastInteractionTicks = Stopwatch.GetTimestamp();
-                    break;
-
                 case GestureStatus.Running:
                     if (!this.AnimationIsRunning(SwipeAnimationName))
                     {
                         var total = this.IsVertical() ? e.TotalY : e.TotalX;
-                        var delta = total - this.previousDelta;
+                        var previousTotal = this.dragPoints.Count > 0 ? this.dragPoints[this.dragPoints.Count - 1].total : 0;
+
+                        var delta = total - previousTotal;
 
                         if (!this.IsPositiveGrowthAxis())
                             delta = -delta;
 
                         this.PanPanel(delta);
-                        this.previousDelta = total;
-                        this.lastInteractionTicks = Stopwatch.GetTimestamp();
+
+                        this.dragPoints.Add(new DragPoint()
+                        {
+                            total = total,
+                            ticks = Stopwatch.GetTimestamp()
+                        });
                     }
                     break;
 
                 case GestureStatus.Completed:
-                    if (!this.AnimationIsRunning(SwipeAnimationName))
+                    if (!this.AnimationIsRunning(SwipeAnimationName) && this.SwipeThreshold > 0)
                     {
-                        if ((this.SwipeThreshold >= 0 && Math.Abs(this.previousDelta) >= this.SwipeThreshold) &&
-                            (this.lastInteractionTicks != 0 && (Stopwatch.GetTimestamp() - this.lastInteractionTicks)/10000 <= this.SwipeReleaseThresholdMs))
-                        {
-                            this.SwipePanel(this.previousDelta);
-                        }
+                        var swipeLength = this.GetSwipeLength(Stopwatch.GetTimestamp());
+
+                        if (Math.Abs(swipeLength) >= this.SwipeThreshold)
+                            this.SwipePanel(swipeLength);
                     }
 
-                    this.previousDelta = 0;
-                    this.lastInteractionTicks = 0;
+                    this.dragPoints.Clear();
                     break;
             }
+        }
+
+        private double GetSwipeLength(long currentTicks)
+        {
+            var length = 0.0;
+            for (var i = this.dragPoints.Count - 1; i >= 0; i--)
+            {
+                var dragPoint = this.dragPoints[i];
+
+                if ((currentTicks - dragPoint.ticks) / 10000 > this.SwipeReleaseThresholdMs)
+                    return length;
+
+                var nextTotal = i < this.dragPoints.Count - 1 ? this.dragPoints[i + 1].total : (double?)null;
+                if (nextTotal.HasValue && dragPoint.total >= 0 != nextTotal >= 0)
+                    return length;
+
+                var prevTotal = i > 0 ? this.dragPoints[i - 1].total : 0;
+                var delta = dragPoint.total - prevTotal;
+
+                length += delta;
+            }
+            return length;
         }
 
         private void PanPanel(double delta)
