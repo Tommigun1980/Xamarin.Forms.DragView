@@ -1,5 +1,6 @@
 # Xamarin.Forms.DragView
 *A draggable pane component for Xamarin.Forms*
+iOS only at the moment.
 
 ![DragView](Doc/DragView.gif)
 
