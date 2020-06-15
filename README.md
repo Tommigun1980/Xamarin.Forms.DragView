@@ -1,7 +1,7 @@
 # Xamarin.Forms.DragView
 *A draggable pane component for Xamarin.Forms*
 
-iOS only at the moment - technically works on Android but judders.
+iOS only at the moment - technically works on Android but judders. Other platforms are untested.
 
 ![DragView](Doc/DragView.gif)
 
